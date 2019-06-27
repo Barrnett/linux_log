@@ -1,0 +1,61 @@
+#!/bin/bash
+
+#创建目录
+function create_dir()
+{
+	echo "----------create directions----------"
+	mkdir log_$(date +%y%m%d%H%M%S)
+	DIR=log_$(date +%y%m%d%H%M%S)
+	mkdir $DIR/files $DIR/tckr $DIR/instructions
+}
+
+#采集/var/log/httpd/下的文件
+function collect_files()
+{
+	echo "----------collect files----------"
+	cp -r /home/ts/ts_prg/probe/log/* $DIR/files
+}
+
+#导出mysql中tckr数据库
+function export_tckr()
+{
+	echo "----------export tckr----------"
+	mysqldump -uroot -p123456 tckr>$DIR/tckr/tckr.sql
+}
+
+#指令内容回显
+function print_instruct()
+{
+	echo "----------print instructions----------"
+	ps ax|tee $DIR/instructions/psax
+	ifconfig|tee $DIR/instructions/ifconfig
+	ping 172.20.0.2 -c4|tee $DIR/instructions/ping
+	free|tee $DIR/instructions/free 
+}
+
+#将log文件压缩并添加压缩密码(tsgroup1)
+function compress()
+{
+	echo "----------compress files----------"
+#	tar -zcvf  - $DIR |openssl des3 -salt -k tsgroup1 | dd of=/xiaocao_data/log/$DIR.tar.gz
+	zip -rP tsgroup1 /xiaocao_data/log/$DIR.zip $DIR
+}
+
+#删除创建的log文件夹
+function delete_log()
+{
+	echo "----------delete log----------"
+	rm -rf $DIR
+
+}
+
+create_dir
+collect_files
+export_tckr
+print_instruct
+compress
+delete_log
+
+
+#解压文件（密码123456）
+#openssl des3 -d -k 123456 -salt -in CPE.tar.gz | tar xzf -
